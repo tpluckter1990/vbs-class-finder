@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VBS Class Finder – Illumination Station 2026</title>
+<style>
+  :root {
+    --purple: #6B2FA0;
+    --orange: #E8621A;
+    --pink: #D4297A;
+    --light: #F5F0FB;
+    --border: #DDD;
+    --row-odd: #fff;
+    --row-even: #F9F5FD;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0eaf8; color: #222; }
+
+  header {
+    background: var(--purple);
+    color: #fff;
+    padding: 14px 16px 10px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: .3px; }
+  header p { font-size: .75rem; opacity: .8; margin-top: 1px; }
+
+  .search-bar {
+    padding: 10px 12px;
+    background: var(--purple);
+  }
+  .search-bar input {
+    width: 100%; padding: 10px 14px;
+    border: none; border-radius: 8px;
+    font-size: 1rem; outline: none;
+    background: rgba(255,255,255,0.95);
+  }
+
+  .tabs {
+    display: flex; background: #fff;
+    border-bottom: 2px solid var(--purple);
+    overflow-x: auto; white-space: nowrap;
+  }
+  .tab-btn {
+    padding: 10px 16px; font-size: .85rem; font-weight: 600;
+    border: none; background: transparent; cursor: pointer;
+    color: #666; flex-shrink: 0;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tab-btn.active { color: var(--purple); border-bottom-color: var(--purple); }
+
+  .content { padding: 12px; }
+
+  /* Grade cards */
+  .grade-list { display: flex; flex-direction: column; gap: 8px; }
+  .grade-card {
+    background: #fff; border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    overflow: hidden;
+  }
+  .grade-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; cursor: pointer;
+    background: var(--purple); color: #fff;
+    font-weight: 700; font-size: .95rem;
+  }
+  .grade-header .chevron { transition: transform .2s; font-size: .8rem; }
+  .grade-header.open .chevron { transform: rotate(180deg); }
+  .class-list { display: none; flex-direction: column; }
+  .class-list.open { display: flex; }
+  .class-item {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+    background: #fff;
+    transition: background .15s;
+  }
+  .class-item:last-child { border-bottom: none; }
+  .class-item:hover, .class-item:active { background: var(--light); }
+  .class-item .class-name { font-weight: 600; font-size: .9rem; color: #222; }
+  .class-item .class-room { font-size: .8rem; color: #888; margin-top: 1px; }
+  .class-item .arrow { color: var(--purple); font-size: .85rem; }
+
+  /* Schedule detail */
+  .schedule-view { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.1); overflow: hidden; }
+  .schedule-header {
+    background: var(--orange); color: #fff;
+    padding: 12px 14px;
+  }
+  .schedule-header h2 { font-size: 1rem; font-weight: 700; }
+  .schedule-header p { font-size: .8rem; opacity: .9; margin-top: 2px; }
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-bottom: 10px;
+    padding: 7px 12px; background: var(--purple); color: #fff;
+    border: none; border-radius: 8px; font-size: .85rem; font-weight: 600;
+    cursor: pointer;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    background: var(--light); padding: 8px 10px;
+    font-size: .78rem; text-transform: uppercase; letter-spacing: .5px;
+    color: var(--purple); text-align: left; border-bottom: 2px solid var(--border);
+  }
+  tbody tr:nth-child(odd) { background: var(--row-odd); }
+  tbody tr:nth-child(even) { background: var(--row-even); }
+  tbody td { padding: 9px 10px; font-size: .88rem; border-bottom: 1px solid #eee; vertical-align: top; }
+  tbody td:first-child { font-weight: 600; white-space: nowrap; color: #444; }
+  .travel-row td { color: #aaa; font-style: italic; font-size: .82rem; }
+  .highlight-activity { background: #FFF3E0 !important; }
+
+  /* Search results */
+  .search-results { display: flex; flex-direction: column; gap: 8px; }
+  .result-item {
+    background: #fff; border-radius: 10px; padding: 12px 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+    transition: background .15s;
+  }
+  .result-item:hover { background: var(--light); }
+  .result-label { font-weight: 600; font-size: .9rem; }
+  .result-sub { font-size: .8rem; color: #888; margin-top: 2px; }
+
+  /* Room view */
+  .room-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .room-btn {
+    padding: 7px 12px; border-radius: 20px; border: 2px solid var(--purple);
+    background: #fff; color: var(--purple); font-size: .82rem; font-weight: 600;
+    cursor: pointer; transition: all .15s;
+  }
+  .room-btn.active, .room-btn:hover { background: var(--purple); color: #fff; }
+
+  .note-box {
+    background: #FFF8E1; border-left: 4px solid #FFC107;
+    padding: 8px 12px; font-size: .8rem; margin-top: 10px; border-radius: 0 6px 6px 0;
+    color: #555;
+  }
+  .empty-state { text-align: center; padding: 32px 16px; color: #999; font-size: .95rem; }
+  .tag { display: inline-block; padding: 2px 7px; border-radius: 20px; font-size: .72rem; font-weight: 700; margin-left: 6px; }
+  .tag-grade { background: var(--light); color: var(--purple); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ VBS Class Finder</h1>
+  <p>Illumination Station 2026 · Burnt Hickory Baptist</p>
+</header>
+<div class="search-bar">
+  <input type="search" id="searchInput" placeholder="Search class, room, or grade (e.g. C128, Twos, 3rd)…" autocomplete="off" />
+</div>
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('browse')">Browse by Grade</button>
+  <button class="tab-btn" onclick="showTab('rooms')">Room View</button>
+</div>
+
+<div class="content">
+  <div id="searchResultsView" style="display:none">
+    <button class="back-btn" onclick="clearSearch()">← Back</button>
+    <div class="search-results" id="searchResultsList"></div>
+  </div>
+  <div id="scheduleDetailView" style="display:none">
+    <button class="back-btn" id="backBtn" onclick="goBack()">← Back</button>
+    <div class="schedule-view" id="scheduleContent"></div>
+  </div>
+  <div id="tabBrowse">
+    <div class="grade-list" id="gradeList"></div>
+  </div>
+  <div id="tabRooms" style="display:none">
+    <div class="room-selector" id="roomSelector"></div>
+    <div id="roomScheduleContent"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SCHEDULE DATA
+// ============================================================
+const GRADES = [
+  {
+    grade: "Twos",
+    color: "#6B2FA0",
+    classes: [
+      {
+        id:"twos-1", group:"Twos 1", room:"C128", grade:"Twos",
+        notes:"*Teacher Breaktime during REC 10:55–11:15 (Bye-Bye Buggy Team). Teacher Lounge in Radiate Café.",
+        schedule:[
+          {time:"9:00–9:15",  activity:"Class Time",     location:"C128"},
+          {time:"9:15–9:30",  activity:"Music",           location:"C131"},
+          {time:"9:30–9:35",  activity:"Travel",          location:""},
+          {time:"9:35–10:00", activity:"Snack / Class Time", location:"C128"},
+          {time:"10:00–10:05",activity:"Travel",          location:""},
+          {time:"10:05–10:25",activity:"Craft",           location:"C130"},
+          {time:"10:25–10:30",activity:"Travel",          location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",   location:"Lower Auditorium"},
+          {time:"10:55–11:15",activity:"*REC",            location:"Babies PG"},
+          {time:"11:15–11:20",activity:"Travel",          location:""},
+          {time:"11:20–12:00",activity:"Class Time",      location:"C128"},
+          {time:"12:00",       activity:"Dismissal",      location:"C128"},
+        ]
+      },
+      {
+        id:"twos-2", group:"Twos 2", room:"C126", grade:"Twos",
+        notes:"*Teacher Breaktime during REC 11:20–11:40 (Bye-Bye Buggy Team). Teacher Lounge in Radiate Café.",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",      location:"C126"},
+          {time:"9:25–9:30",  activity:"Travel",           location:""},
+          {time:"9:30–9:45",  activity:"Music",            location:"C131"},
+          {time:"9:45–9:50",  activity:"Travel",           location:""},
+          {time:"9:50–10:25", activity:"Snack / Class Time",location:"C126"},
+          {time:"10:25–10:30",activity:"Travel",           location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",    location:"Lower Auditorium"},
+          {time:"10:55–11:15",activity:"Craft",            location:"C130"},
+          {time:"11:15–11:20",activity:"Travel",           location:""},
+          {time:"11:20–11:40",activity:"*REC",             location:"Babies PG"},
+          {time:"11:40–11:45",activity:"Travel",           location:""},
+          {time:"11:45–12:00",activity:"Class Time",       location:"C126"},
+          {time:"12:00",       activity:"Dismissal",       location:"C126"},
+        ]
+      }
+    ]
+  },
+  {
+    grade: "Threes",
+    color: "#6B2FA0",
+    classes: [
+      {
+        id:"threes-1", group:"Threes 1", room:"C129", grade:"Threes",
+        notes:"*Teacher Breaktime during REC 10:05–10:25. REC: Indoor PG on M/W/F, Front Outdoor PG on T/TH.",
+        schedule:[
+          {time:"9:00–9:45",  activity:"Class Time",    location:"C129"},
+          {time:"9:45–10:00", activity:"Snack",          location:"C129"},
+          {time:"10:00–10:05",activity:"Travel",         location:""},
+          {time:"10:05–10:25",activity:"*REC",           location:"Indoor PG (M/W/F) / Front Outdoor PG (T/TH)"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:00",activity:"Travel",         location:""},
+          {time:"11:00–11:10",activity:"Bathroom Break", location:"C129"},
+          {time:"11:10–11:15",activity:"Travel",         location:""},
+          {time:"11:15–11:35",activity:"Craft",          location:"C130"},
+          {time:"11:35–11:55",activity:"Music",          location:"C131"},
+          {time:"11:55–12:00",activity:"Travel",         location:""},
+          {time:"12:00",       activity:"Dismissal",     location:"C129"},
+        ]
+      },
+      {
+        id:"threes-2", group:"Threes 2", room:"C127", grade:"Threes",
+        notes:"*Teacher Breaktime during REC 10:05–10:25. REC: Indoor PG on M/W/F, Front Outdoor PG on T/TH.",
+        schedule:[
+          {time:"9:00–9:45",  activity:"Class Time",    location:"C127"},
+          {time:"9:45–10:00", activity:"Snack",          location:"C127"},
+          {time:"10:00–10:05",activity:"Travel",         location:""},
+          {time:"10:05–10:25",activity:"*REC",           location:"Indoor PG (M/W/F) / Front Outdoor PG (T/TH)"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:00",activity:"Travel",         location:""},
+          {time:"11:00–11:10",activity:"Bathroom Break", location:"C127"},
+          {time:"11:10–11:15",activity:"Travel",         location:""},
+          {time:"11:15–11:35",activity:"Craft",          location:"C130"},
+          {time:"11:35–11:55",activity:"Music",          location:"C131"},
+          {time:"11:55–12:00",activity:"Travel",         location:""},
+          {time:"12:00",       activity:"Dismissal",     location:"C127"},
+        ]
+      },
+      {
+        id:"threes-3", group:"Threes 3", room:"C106", grade:"Threes",
+        notes:"*Teacher Breaktime during REC 10:05–10:25. REC: Indoor PG on M/W/F, Front Outdoor PG on T/TH.",
+        schedule:[
+          {time:"9:00–9:40",  activity:"Class Time",    location:"C106"},
+          {time:"9:40–9:45",  activity:"Travel",         location:""},
+          {time:"9:45–10:05", activity:"Music",          location:"C131"},
+          {time:"10:05–10:25",activity:"*REC",           location:"Indoor PG (M/W/F) / Front Outdoor PG (T/TH)"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:00",activity:"Travel",         location:""},
+          {time:"11:00–11:30",activity:"Snack / Class Time", location:"C106"},
+          {time:"11:30–11:35",activity:"Travel",         location:""},
+          {time:"11:35–11:55",activity:"Craft",          location:"C130"},
+          {time:"11:55–12:00",activity:"Travel",         location:""},
+          {time:"12:00",       activity:"Dismissal",     location:"C106"},
+        ]
+      }
+    ]
+  },
+  {
+    grade: "Fours",
+    color: "#6B2FA0",
+    classes: [
+      {
+        id:"fours-1", group:"Fours 1", room:"C107", grade:"Fours",
+        notes:"*Teacher Breaktime during REC 10:05–10:25. REC: Front Outdoor PG on M/W/F, Indoor PG on T/TH.",
+        schedule:[
+          {time:"9:00–9:20",  activity:"Class Time",    location:"C107"},
+          {time:"9:20–9:35",  activity:"Snack",          location:"C107"},
+          {time:"9:35–9:40",  activity:"Travel",         location:""},
+          {time:"9:40–10:00", activity:"Craft",          location:"C130"},
+          {time:"10:00–10:05",activity:"Travel",         location:""},
+          {time:"10:05–10:25",activity:"*REC",           location:"Front Outdoor PG (M/W/F) / Indoor PG (T/TH)"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:15",activity:"Music",          location:"C131"},
+          {time:"11:15–11:20",activity:"Travel",         location:""},
+          {time:"11:20–12:00",activity:"Class Time",     location:"C107"},
+          {time:"12:00",       activity:"Dismissal",     location:"C107"},
+        ]
+      },
+      {
+        id:"fours-2", group:"Fours 2", room:"C109", grade:"Fours",
+        notes:"*Teacher Breaktime during REC 10:05–10:25. REC: Front Outdoor PG on M/W/F, Indoor PG on T/TH.",
+        schedule:[
+          {time:"9:00–9:20",  activity:"Class Time",    location:"C109"},
+          {time:"9:20–9:35",  activity:"Snack",          location:"C109"},
+          {time:"9:35–9:40",  activity:"Travel",         location:""},
+          {time:"9:40–10:00", activity:"Craft",          location:"C130"},
+          {time:"10:00–10:05",activity:"Travel",         location:""},
+          {time:"10:05–10:25",activity:"*REC",           location:"Front Outdoor PG (M/W/F) / Indoor PG (T/TH)"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:15",activity:"Music",          location:"C131"},
+          {time:"11:15–11:20",activity:"Travel",         location:""},
+          {time:"11:20–12:00",activity:"Class Time",     location:"C109"},
+          {time:"12:00",       activity:"Dismissal",     location:"C109"},
+        ]
+      },
+      {
+        id:"fours-3", group:"Fours 3", room:"C108", grade:"Fours",
+        notes:"*Teacher Breaktime during REC 10:05–10:25. REC: Front Outdoor PG on M/W/F, Indoor PG on T/TH.",
+        schedule:[
+          {time:"9:00–10:00", activity:"Class Time / Snack", location:"C108"},
+          {time:"10:00–10:05",activity:"Travel",         location:""},
+          {time:"10:05–10:25",activity:"*REC",           location:"Front Outdoor PG (M/W/F) / Indoor PG (T/TH)"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:00",activity:"Travel",         location:""},
+          {time:"11:00–11:10",activity:"Bathroom Break", location:"C108"},
+          {time:"11:10–11:15",activity:"Travel",         location:""},
+          {time:"11:15–11:35",activity:"Music",          location:"C131"},
+          {time:"11:35–11:55",activity:"Craft",          location:"C130"},
+          {time:"11:55–12:00",activity:"Travel",         location:""},
+          {time:"12:00",       activity:"Dismissal",     location:"C108"},
+        ]
+      }
+    ]
+  },
+  {
+    grade: "Special Needs",
+    color: "#C0392B",
+    classes: [
+      {
+        id:"sn-prek", group:"Special Needs Pre-K/Kinder", room:"C117", grade:"Special Needs",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC 9:40–10:00, stay with class during Craft. REC: Indoor PG (M/W/F), Front Outdoor PG (T/Th).",
+        schedule:[
+          {time:"9:00–9:15",  activity:"Class Time",     location:"C117"},
+          {time:"9:15–9:20",  activity:"Travel",          location:""},
+          {time:"9:20–9:40",  activity:"Craft",           location:"C130"},
+          {time:"9:40–10:00", activity:"*REC",            location:"Indoor PG (M/W/F) / Front Outdoor PG (T/Th)"},
+          {time:"10:00–10:05",activity:"Travel",          location:""},
+          {time:"10:05–10:25",activity:"*Music",          location:"C131"},
+          {time:"10:25–10:30",activity:"Travel",          location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",   location:"Lower Auditorium"},
+          {time:"10:55–11:00",activity:"Travel",          location:""},
+          {time:"11:00–11:15",activity:"**Snack",         location:"C117"},
+          {time:"11:15–12:00",activity:"Class Time",      location:"C117"},
+          {time:"12:00",       activity:"Dismissal",      location:"C117"},
+        ]
+      },
+      {
+        id:"sn-elem", group:"Special Needs Elementary", room:"C207", grade:"Special Needs",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC 10:25–10:45, stay with class during Craft. REC: Outdoor Rear PG (M/W/F), Indoor PG (T/Th). NOTE: Worship Rally available 9:30–9:55 as alternative to Music.",
+        schedule:[
+          {time:"9:00–9:30",  activity:"Class Time",     location:"C207"},
+          {time:"9:30–9:35",  activity:"Travel",          location:""},
+          {time:"9:35–9:55",  activity:"*Music",          location:"A290"},
+          {time:"9:55–10:00", activity:"Travel",          location:""},
+          {time:"10:00–10:20",activity:"Craft",           location:"A272"},
+          {time:"10:20–10:25",activity:"Travel",          location:""},
+          {time:"10:25–10:45",activity:"*REC",            location:"Outdoor Rear PG (M/W/F) / Indoor PG (T/Th)"},
+          {time:"10:45–10:50",activity:"Travel",          location:""},
+          {time:"10:50–11:05",activity:"**Snack",         location:"C207"},
+          {time:"11:05–12:00",activity:"Class Time",      location:"C207"},
+          {time:"12:00",       activity:"Dismissal",      location:"C207"},
+        ]
+      }
+    ]
+  },
+  {
+    grade: "Entering Kindergarten",
+    color: "#1565C0",
+    classes: [
+      {
+        id:"ek-1-3", group:"Entering K Groups 1–3", room:"C134 / C135 / C136", grade:"Entering Kindergarten",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC 11:25–11:45. REC: Front Outdoor PG (Mon/Thurs), Rear Outdoor PG (Tues/Fri), Indoor PG (Wed).",
+        schedule:[
+          {time:"9:00–9:15",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:15–9:20",  activity:"Travel",         location:""},
+          {time:"9:20–9:40",  activity:"*Music",         location:"Upper Level Kid's Worship"},
+          {time:"9:40–9:45",  activity:"Travel",         location:""},
+          {time:"9:45–10:05", activity:"Craft",          location:"C213"},
+          {time:"10:05–10:10",activity:"Travel",         location:""},
+          {time:"10:10–10:25",activity:"**Snack",        location:"Classroom"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:00",activity:"Travel",         location:""},
+          {time:"11:00–11:20",activity:"Class Time",     location:"Classroom"},
+          {time:"11:20–11:25",activity:"Travel",         location:""},
+          {time:"11:25–11:45",activity:"*REC",           location:"Front Outdoor PG (Mon/Thu) / Rear Outdoor PG (Tue/Fri) / Indoor PG (Wed)"},
+          {time:"11:45–11:50",activity:"Travel",         location:""},
+          {time:"11:50–12:00",activity:"Wrap-Up",        location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"ek-4-6", group:"Entering K Groups 4–6", room:"C137 / C139 / C140", grade:"Entering Kindergarten",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC 11:00–11:20. REC: Indoor PG (Mon/Thu), Outdoor Rear PG (Wed), Outdoor Front PG (Tue/Fri).",
+        schedule:[
+          {time:"9:00–9:15",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:15–9:20",  activity:"Travel",         location:""},
+          {time:"9:20–9:40",  activity:"Craft",          location:"C213"},
+          {time:"9:40–9:45",  activity:"Travel",         location:""},
+          {time:"9:45–10:00", activity:"**Snack",        location:"Classroom"},
+          {time:"10:00–10:25",activity:"Class Time",     location:"Classroom"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:00",activity:"Travel",         location:""},
+          {time:"11:00–11:20",activity:"*REC",           location:"Indoor PG (Mon/Thu) / Rear PG (Wed) / Front PG (Tue/Fri)"},
+          {time:"11:20–11:25",activity:"Travel",         location:""},
+          {time:"11:25–11:45",activity:"*Music",         location:"Lower Level Kid's Worship"},
+          {time:"11:45–11:50",activity:"Travel",         location:""},
+          {time:"11:50–12:00",activity:"Wrap-Up",        location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"ek-7-9", group:"Entering K Groups 7–9", room:"C141 / C142 / C143", grade:"Entering Kindergarten",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC 11:25–11:45. REC: Indoor PG (Mon/Thu), Rear Outdoor PG (Wed), Front Outdoor PG (Tue/Fri).",
+        schedule:[
+          {time:"9:00–9:15",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:15–9:20",  activity:"Travel",         location:""},
+          {time:"9:20–9:40",  activity:"*Music",         location:"Lower Level Kid's Worship"},
+          {time:"9:40–9:45",  activity:"Travel",         location:""},
+          {time:"9:45–10:00", activity:"**Snack",        location:"Classroom"},
+          {time:"10:00–10:05",activity:"Travel",         location:""},
+          {time:"10:05–10:25",activity:"Craft",          location:"C213"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:00",activity:"Travel",         location:""},
+          {time:"11:00–11:20",activity:"Class Time",     location:"Classroom"},
+          {time:"11:20–11:25",activity:"Travel",         location:""},
+          {time:"11:25–11:45",activity:"*REC",           location:"Indoor PG (Mon/Thu) / Rear PG (Wed) / Front PG (Tue/Fri)"},
+          {time:"11:45–11:50",activity:"Travel",         location:""},
+          {time:"11:50–12:00",activity:"Wrap-Up",        location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"ek-10-12", group:"Entering K Groups 10–12", room:"C144 / C145 / C146", grade:"Entering Kindergarten",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC 11:25–11:45. REC: Rear Outdoor PG (Mon/Thu), Front Outdoor PG (Wed), Indoor PG (Tue/Fri).",
+        schedule:[
+          {time:"9:00–9:15",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:15–9:20",  activity:"Travel",         location:""},
+          {time:"9:20–9:40",  activity:"*Music",         location:"Music Suite"},
+          {time:"9:40–9:45",  activity:"Travel",         location:""},
+          {time:"9:45–10:00", activity:"**Snack",        location:"Classroom"},
+          {time:"10:00–10:05",activity:"Travel",         location:""},
+          {time:"10:05–10:25",activity:"Craft",          location:"C214"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:00",activity:"Travel",         location:""},
+          {time:"11:00–11:20",activity:"Class Time",     location:"Classroom"},
+          {time:"11:20–11:25",activity:"Travel",         location:""},
+          {time:"11:25–11:45",activity:"*REC",           location:"Rear Outdoor PG (Mon/Thu) / Front Outdoor PG (Wed) / Indoor PG (Tue/Fri)"},
+          {time:"11:45–11:50",activity:"Travel",         location:""},
+          {time:"11:50–12:00",activity:"Wrap-Up",        location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"ek-13-15", group:"Entering K Groups 13–15", room:"C147 / C148 / C150", grade:"Entering Kindergarten",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC 9:20–9:40. REC: Rear Outdoor PG (Mon/Thu), Front Outdoor PG (Wed), Indoor PG (Tue/Fri).",
+        schedule:[
+          {time:"9:00–9:15",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:15–9:20",  activity:"Travel",         location:""},
+          {time:"9:20–9:40",  activity:"*REC",           location:"Rear Outdoor PG (Mon/Thu) / Front Outdoor PG (Wed) / Indoor PG (Tue/Fri)"},
+          {time:"9:40–9:45",  activity:"Travel",         location:""},
+          {time:"9:45–10:00", activity:"**Snack",        location:"Classroom"},
+          {time:"10:00–10:25",activity:"Class Time",     location:"Classroom"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:05",activity:"Travel / Bathroom", location:""},
+          {time:"11:05–11:25",activity:"*Music",         location:"Lower Level Kid's Worship"},
+          {time:"11:25–11:30",activity:"Travel",         location:""},
+          {time:"11:30–11:50",activity:"Craft",          location:"C214"},
+          {time:"11:50–11:55",activity:"Travel",         location:""},
+          {time:"11:55–12:00",activity:"Wrap-Up",        location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      }
+    ]
+  },
+  {
+    grade: "Completed Kindergarten",
+    color: "#1565C0",
+    classes: [
+      {
+        id:"ck-1-3", group:"Completed K Groups 1–3", room:"C110 / C111 / C113", grade:"Completed Kindergarten",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC 11:00–11:20. REC: Front Outdoor PG (Mon/Thu), Rear Outdoor PG (Tue/Fri), Indoor PG (Wed).",
+        schedule:[
+          {time:"9:00–9:15",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:15–9:20",  activity:"Travel",         location:""},
+          {time:"9:20–9:40",  activity:"Craft",          location:"C214"},
+          {time:"9:40–9:45",  activity:"Travel",         location:""},
+          {time:"9:45–10:05", activity:"*Music",         location:"Lower Level Kid's Worship"},
+          {time:"10:05–10:10",activity:"Travel",         location:""},
+          {time:"10:10–10:25",activity:"**Snack",        location:"Classroom"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:00",activity:"Travel",         location:""},
+          {time:"11:00–11:20",activity:"*REC",           location:"Front Outdoor PG (Mon/Thu) / Rear Outdoor PG (Tue/Fri) / Indoor PG (Wed)"},
+          {time:"11:20–11:25",activity:"Travel",         location:""},
+          {time:"11:25–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"ck-4-6", group:"Completed K Groups 4–6", room:"C114 / C115 / C116", grade:"Completed Kindergarten",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC 9:20–9:40. REC: Front Outdoor PG (Mon/Thu), Rear Outdoor PG (Tue/Fri), Indoor PG (Wed).",
+        schedule:[
+          {time:"9:00–9:15",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:15–9:20",  activity:"Travel",         location:""},
+          {time:"9:20–9:40",  activity:"*REC",           location:"Front Outdoor PG (Mon/Thu) / Rear Outdoor PG (Tue/Fri) / Indoor PG (Wed)"},
+          {time:"9:40–9:45",  activity:"Travel",         location:""},
+          {time:"9:45–10:05", activity:"Craft",          location:"C214"},
+          {time:"10:05–10:10",activity:"Travel",         location:""},
+          {time:"10:10–10:25",activity:"**Snack",        location:"Classroom"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:10",activity:"Travel / Bathroom", location:""},
+          {time:"11:10–11:30",activity:"*Music",         location:"Upper Level Kid's Worship"},
+          {time:"11:30–11:35",activity:"Travel",         location:""},
+          {time:"11:35–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"ck-7-9", group:"Completed K Groups 7–9", room:"C118 / C120 / C121", grade:"Completed Kindergarten",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC 9:20–9:40. REC: Indoor PG (Mon/Thu), Front Outdoor PG (Tue/Fri), Rear Outdoor PG (Wed).",
+        schedule:[
+          {time:"9:00–9:15",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:15–9:20",  activity:"Travel",         location:""},
+          {time:"9:20–9:40",  activity:"*REC",           location:"Indoor PG (Mon/Thu) / Front Outdoor PG (Tue/Fri) / Rear Outdoor PG (Wed)"},
+          {time:"9:40–9:45",  activity:"Travel",         location:""},
+          {time:"9:45–10:05", activity:"*Music",         location:"Music Suite"},
+          {time:"10:05–10:10",activity:"Travel",         location:""},
+          {time:"10:10–10:25",activity:"**Snack",        location:"Classroom"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:00",activity:"Travel",         location:""},
+          {time:"11:00–11:20",activity:"Craft",          location:"C213"},
+          {time:"11:20–11:25",activity:"Travel",         location:""},
+          {time:"11:25–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"ck-10-12", group:"Completed K Groups 10–12", room:"C122 / C123 / C124", grade:"Completed Kindergarten",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC 11:00–11:20. REC: Rear Outdoor PG (Mon/Thu), Front Outdoor PG (Wed), Indoor PG (Tue/Fri).",
+        schedule:[
+          {time:"9:00–9:35",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:35–9:40",  activity:"Travel",         location:""},
+          {time:"9:40–10:00", activity:"*Music",         location:"Upper Level Kid's Worship"},
+          {time:"10:00–10:05",activity:"Travel",         location:""},
+          {time:"10:05–10:25",activity:"**Snack / Class Time", location:"Classroom"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:00",activity:"Travel",         location:""},
+          {time:"11:00–11:20",activity:"*REC",           location:"Rear Outdoor PG (Mon/Thu) / Front Outdoor PG (Wed) / Indoor PG (Tue/Fri)"},
+          {time:"11:20–11:25",activity:"Travel",         location:""},
+          {time:"11:25–11:45",activity:"Craft",          location:"C213"},
+          {time:"11:45–11:50",activity:"Travel",         location:""},
+          {time:"11:50–12:00",activity:"Wrap-Up",        location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"ck-13-15", group:"Completed K Groups 13–15", room:"C125 / 211 / 212", grade:"Completed Kindergarten",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC 9:40–10:00. REC: Front Outdoor PG (Mon/Wed/Fri), Indoor PG (Tue/Thu).",
+        schedule:[
+          {time:"9:00–9:35",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:35–9:40",  activity:"Travel",         location:""},
+          {time:"9:40–10:00", activity:"*REC",           location:"Front Outdoor PG (Mon/Wed/Fri) / Indoor PG (Tue/Thu)"},
+          {time:"10:00–10:05",activity:"Travel",         location:""},
+          {time:"10:05–10:25",activity:"**Snack / Class Time", location:"Classroom"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–10:55",activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"10:55–11:05",activity:"Travel / Bathroom", location:""},
+          {time:"11:05–11:25",activity:"*Craft",         location:"C214"},
+          {time:"11:25–11:30",activity:"Travel",         location:""},
+          {time:"11:30–11:50",activity:"*Music",         location:"Upper Level Kid's Worship"},
+          {time:"11:50–11:55",activity:"Travel",         location:""},
+          {time:"11:55–12:00",activity:"Wrap-Up",        location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      }
+    ]
+  },
+  {
+    grade: "1st Grade",
+    color: "#2E7D32",
+    classes: [
+      {
+        id:"1st-1-3", group:"1st Grade Groups 1–3", room:"C201 / C202 / C205", grade:"1st Grade",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC/Craft. Craft/REC: A291 (M/W/F), Field A (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:20",activity:"*Music",         location:"Upper Level Kid's Worship"},
+          {time:"10:20–10:25",activity:"Travel",         location:""},
+          {time:"10:25–10:40",activity:"**Snack",        location:"Classroom"},
+          {time:"10:40–10:45",activity:"Travel",         location:""},
+          {time:"10:45–11:05",activity:"*Craft / *REC",  location:"A291 (M/W/F) / Field A (Tu/Th)"},
+          {time:"11:05–11:10",activity:"Travel",         location:""},
+          {time:"11:10–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"1st-4-6", group:"1st Grade Groups 4–6", room:"C206 / C208 / C220", grade:"1st Grade",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC/Craft. Craft/REC: A291 (M/W/F), Field A (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:20",activity:"*Craft / *REC",  location:"A291 (M/W/F) / Field A (Tu/Th)"},
+          {time:"10:20–10:25",activity:"Travel",         location:""},
+          {time:"10:25–10:45",activity:"*Music",         location:"Upper Level Kid's Worship"},
+          {time:"10:45–10:50",activity:"Travel",         location:""},
+          {time:"10:50–11:10",activity:"**Snack",        location:"Classroom"},
+          {time:"11:10–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"1st-7-9", group:"1st Grade Groups 7–9", room:"C221 / C223 / C224", grade:"1st Grade",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC/Craft. Craft/REC: A291 (M/W/F), Field A (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:05", activity:"Travel / Bathroom", location:""},
+          {time:"10:05–10:25",activity:"*Music",         location:"Lower Level Kid's Worship"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–11:00",activity:"**Snack / Class Time", location:"Classroom"},
+          {time:"11:00–11:05",activity:"Travel",         location:""},
+          {time:"11:05–11:25",activity:"*Craft / *REC",  location:"A291 (M/W/F) / Field A (Tu/Th)"},
+          {time:"11:25–11:30",activity:"Travel",         location:""},
+          {time:"11:30–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"1st-10-12", group:"1st Grade Groups 10–12", room:"C225 / C226 / C232", grade:"1st Grade",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC/Craft. Craft/REC: A291 (M/W/F), Field A (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:20",activity:"**Snack",        location:"Classroom"},
+          {time:"10:20–10:25",activity:"Travel",         location:""},
+          {time:"10:25–10:45",activity:"*Music",         location:"Lower Level Kid's Worship"},
+          {time:"10:45–10:50",activity:"Travel",         location:""},
+          {time:"10:50–11:20",activity:"Class Time",     location:"Classroom"},
+          {time:"11:20–11:25",activity:"Travel",         location:""},
+          {time:"11:25–11:45",activity:"*Craft / *REC",  location:"A291 (M/W/F) / Field A (Tu/Th)"},
+          {time:"11:45–11:50",activity:"Travel",         location:""},
+          {time:"11:50–12:00",activity:"Wrap-Up",        location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"1st-13", group:"1st Grade Group 13", room:"C234", grade:"1st Grade",
+        notes:"**Snack delivered to classroom. *Teacher Breaktime during REC/Craft. Craft/REC: A291 (M/W/F), Field A (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:15",activity:"**Snack",        location:"Classroom"},
+          {time:"10:15–10:20",activity:"Travel",         location:""},
+          {time:"10:20–10:40",activity:"*Craft / *REC",  location:"A291 (M/W/F) / Field A (Tu/Th)"},
+          {time:"10:40–10:45",activity:"Travel",         location:""},
+          {time:"10:45–11:05",activity:"*Music",         location:"Upper Level Kid's Worship"},
+          {time:"11:05–11:10",activity:"Travel",         location:""},
+          {time:"11:10–11:55",activity:"Class Time",     location:"Classroom"},
+          {time:"11:55–12:00",activity:"Wrap-Up",        location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      }
+    ]
+  },
+  {
+    grade: "2nd Grade",
+    color: "#2E7D32",
+    classes: [
+      {
+        id:"2nd-1-2", group:"2nd Grade Groups 1–2", room:"C235 / C236", grade:"2nd Grade",
+        notes:"**Snack delivered to classroom. REC/Craft: Field A (M/W/F), A291 (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:20",activity:"Class Time",     location:"Classroom"},
+          {time:"10:20–10:25",activity:"Travel",         location:""},
+          {time:"10:25–10:45",activity:"*Music",         location:"Music Suite"},
+          {time:"10:45–10:50",activity:"Travel",         location:""},
+          {time:"10:50–11:00",activity:"**Snack",        location:"Classroom"},
+          {time:"11:00–11:05",activity:"Travel",         location:""},
+          {time:"11:05–11:25",activity:"*REC / *Craft",  location:"Field A (M/W/F) / A291 (Tu/Th)"},
+          {time:"11:25–11:30",activity:"Travel",         location:""},
+          {time:"11:30–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"2nd-3-4", group:"2nd Grade Groups 3–4", room:"C237 / C238", grade:"2nd Grade",
+        notes:"**Snack delivered to classroom. REC/Craft: Field A (M/W/F), A291 (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:20",activity:"*REC / *Craft",  location:"Field A (M/W/F) / A291 (Tu/Th)"},
+          {time:"10:20–10:25",activity:"Travel",         location:""},
+          {time:"10:25–10:40",activity:"**Snack",        location:"Classroom"},
+          {time:"10:40–10:45",activity:"Travel",         location:""},
+          {time:"10:45–11:05",activity:"*Music",         location:"Lower Level Kid's Worship"},
+          {time:"11:05–11:10",activity:"Travel",         location:""},
+          {time:"11:10–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"2nd-5-6", group:"2nd Grade Groups 5–6", room:"C239 / C240", grade:"2nd Grade",
+        notes:"**Snack delivered to classroom. REC/Craft: Field A (M/W/F), A291 (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:15",activity:"**Snack",        location:"Classroom"},
+          {time:"10:15–10:20",activity:"Travel",         location:""},
+          {time:"10:20–10:40",activity:"*REC / *Craft",  location:"Field A (M/W/F) / A291 (Tu/Th)"},
+          {time:"10:40–10:45",activity:"Travel",         location:""},
+          {time:"10:45–11:05",activity:"*Music",         location:"Upper Level Kid's Worship"},
+          {time:"11:05–11:10",activity:"Travel",         location:""},
+          {time:"11:10–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"2nd-7-8", group:"2nd Grade Groups 7–8", room:"C230 / A297", grade:"2nd Grade",
+        notes:"**Snack delivered to classroom. REC/Craft: Field A (M/W/F), A291 (Tu/Th). Music in A290.",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:40",activity:"**Snack / Class Time", location:"Classroom"},
+          {time:"10:40–10:45",activity:"Travel",         location:""},
+          {time:"10:45–11:05",activity:"*REC / *Craft",  location:"Field A (M/W/F) / A291 (Tu/Th)"},
+          {time:"11:05–11:20",activity:"Travel / Bathroom", location:""},
+          {time:"11:20–11:40",activity:"Music",          location:"A290"},
+          {time:"11:40–11:45",activity:"Travel",         location:""},
+          {time:"11:45–12:00",activity:"Wrap-Up",        location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"2nd-9", group:"2nd Grade Group 9", room:"A295", grade:"2nd Grade",
+        notes:"**Snack delivered to classroom. REC/Craft: A291 (M/W/F), Field A (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:15",activity:"**Snack",        location:"Classroom"},
+          {time:"10:15–10:20",activity:"Travel",         location:""},
+          {time:"10:20–10:40",activity:"*Craft / *REC",  location:"A291 (M/W/F) / Field A (Tu/Th)"},
+          {time:"10:40–10:45",activity:"Travel",         location:""},
+          {time:"10:45–11:05",activity:"*Music",         location:"Lower Level Kid's Worship"},
+          {time:"11:05–11:10",activity:"Travel",         location:""},
+          {time:"11:10–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      }
+    ]
+  },
+  {
+    grade: "3rd Grade",
+    color: "#E65100",
+    classes: [
+      {
+        id:"3rd-1-2", group:"3rd Grade Groups 1–2", room:"A274 / A275", grade:"3rd Grade",
+        notes:"**Snack delivered to classroom. Craft/REC: A272 (M/W/F), Field B (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:20",activity:"*Music",         location:"A290"},
+          {time:"10:20–10:25",activity:"Travel",         location:""},
+          {time:"10:25–10:45",activity:"*Craft / *REC",  location:"A272 (M/W/F) / Field B (Tu/Th)"},
+          {time:"10:45–10:50",activity:"Travel",         location:""},
+          {time:"10:50–11:10",activity:"**Snack",        location:"Classroom"},
+          {time:"11:10–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"3rd-3-4", group:"3rd Grade Groups 3–4", room:"A276 / A282", grade:"3rd Grade",
+        notes:"**Snack delivered to classroom. Craft/REC: A272 (M/W/F), Field B (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:15",activity:"**Snack",        location:"Classroom"},
+          {time:"10:15–10:20",activity:"Travel",         location:""},
+          {time:"10:20–10:40",activity:"*Music",         location:"A290"},
+          {time:"10:40–10:45",activity:"Travel",         location:""},
+          {time:"10:45–11:05",activity:"*Craft / *REC",  location:"A272 (M/W/F) / Field B (Tu/Th)"},
+          {time:"11:05–11:10",activity:"Travel",         location:""},
+          {time:"11:10–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"3rd-5-6", group:"3rd Grade Groups 5–6", room:"A283 / A285", grade:"3rd Grade",
+        notes:"**Snack delivered to classroom. Craft/REC: A272 (M/W/F), Field B (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:55",activity:"**Snack / Class Time", location:"Classroom"},
+          {time:"10:55–11:00",activity:"Travel",         location:""},
+          {time:"11:00–11:20",activity:"*Music",         location:"A290"},
+          {time:"11:20–11:30",activity:"Travel / Bathroom", location:""},
+          {time:"11:30–11:50",activity:"*Craft / *REC",  location:"A272 (M/W/F) / Field B (Tu/Th)"},
+          {time:"11:50–11:55",activity:"Travel",         location:""},
+          {time:"11:55–12:00",activity:"Wrap-Up",        location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"3rd-7-8", group:"3rd Grade Groups 7–8", room:"A286 / A287", grade:"3rd Grade",
+        notes:"**Snack delivered to classroom. Craft/REC: A272 (M/W/F), Field B (Tu/Th).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:35",activity:"**Snack / Class Time", location:"Classroom"},
+          {time:"10:35–10:40",activity:"Travel",         location:""},
+          {time:"10:40–11:00",activity:"*Music",         location:"A290"},
+          {time:"11:00–11:10",activity:"Travel / Bathroom", location:""},
+          {time:"11:10–11:30",activity:"*Craft / *REC",  location:"A272 (M/W/F) / Field B (Tu/Th)"},
+          {time:"11:30–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"3rd-9", group:"3rd Grade Group 9", room:"A293", grade:"3rd Grade",
+        notes:"**Snack delivered to classroom. Craft/REC: A272 (M/W/F), Field B (Tu/Th). Music in A290.",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:20",activity:"*Craft / *REC",  location:"A272 (M/W/F) / Field B (Tu/Th)"},
+          {time:"10:20–10:25",activity:"Travel",         location:""},
+          {time:"10:25–11:30",activity:"**Snack / Class Time", location:"Classroom"},
+          {time:"11:30–11:35",activity:"Travel",         location:""},
+          {time:"11:40–12:00",activity:"Music",          location:"A290"},
+          {time:"12:00",       activity:"Dismissal",     location:"Classroom"},
+        ]
+      }
+    ]
+  },
+  {
+    grade: "4th Grade",
+    color: "#E65100",
+    classes: [
+      {
+        id:"4th-1-2", group:"4th Grade Groups 1–2", room:"A171 / A172", grade:"4th Grade",
+        notes:"**Snack delivered to classroom. REC/Craft: Field B (M/W/F), A272 (Tu/Th). Music in Music Suite.",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:15",activity:"**Snack",        location:"Classroom"},
+          {time:"10:15–10:20",activity:"Travel",         location:""},
+          {time:"10:20–10:40",activity:"*REC / *Craft",  location:"Field B (M/W/F) / A272 (Tu/Th)"},
+          {time:"10:40–10:45",activity:"Travel",         location:""},
+          {time:"10:45–11:05",activity:"*Music",         location:"Music Suite"},
+          {time:"11:05–11:10",activity:"Travel",         location:""},
+          {time:"11:10–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"4th-3-4", group:"4th Grade Groups 3–4", room:"A173 / A175", grade:"4th Grade",
+        notes:"**Snack delivered to classroom. REC/Craft: Field B (M/W/F), A272 (Tu/Th). Music in Music Suite.",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:40",activity:"**Snack / Class Time", location:"Classroom"},
+          {time:"10:40–10:45",activity:"Travel",         location:""},
+          {time:"10:45–11:05",activity:"*REC / *Craft",  location:"Field B (M/W/F) / A272 (Tu/Th)"},
+          {time:"11:05–11:10",activity:"Travel",         location:""},
+          {time:"11:10–11:30",activity:"*Music",         location:"Music Suite"},
+          {time:"11:30–11:35",activity:"Travel",         location:""},
+          {time:"11:35–12:00",activity:"Class Time",     location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      },
+      {
+        id:"4th-5-6", group:"4th Grade Groups 5–6", room:"A178 / A181", grade:"4th Grade",
+        notes:"**Snack delivered to classroom. REC/Craft: Field B (M/W/F), A272 (Tu/Th). Music in Music Suite.",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–11:05",activity:"**Snack / Class Time", location:"Classroom"},
+          {time:"11:05–11:10",activity:"Travel",         location:""},
+          {time:"11:10–11:30",activity:"*REC / *Craft",  location:"Field B (M/W/F) / A272 (Tu/Th)"},
+          {time:"11:30–11:35",activity:"Travel",         location:""},
+          {time:"11:35–11:55",activity:"*Music",         location:"Music Suite"},
+          {time:"11:55–12:00",activity:"Travel",         location:""},
+          {time:"12:00",       activity:"Dismissal",     location:"Classroom"},
+        ]
+      },
+      {
+        id:"4th-7", group:"4th Grade Group 7", room:"A280", grade:"4th Grade",
+        notes:"**Snack delivered to classroom. REC/Craft: Field B (M/W/F), A272 (Tu/Th). Music in A290.",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:00", activity:"Travel",         location:""},
+          {time:"10:00–10:20",activity:"*REC / *Craft",  location:"Field B (M/W/F) / A272 (Tu/Th)"},
+          {time:"10:20–10:25",activity:"Travel",         location:""},
+          {time:"10:25–11:35",activity:"**Snack / Class Time", location:"Classroom"},
+          {time:"11:35–11:40",activity:"Travel",         location:""},
+          {time:"11:40–12:00",activity:"*Music",         location:"A290"},
+          {time:"12:00",       activity:"Dismissal",     location:"Classroom"},
+        ]
+      }
+    ]
+  },
+  {
+    grade: "5th Grade",
+    color: "#880E4F",
+    classes: [
+      {
+        id:"5th-all", group:"5th Grade (All Classes)", room:"Upper Auditorium", grade:"5th Grade",
+        notes:"**Snack delivered to classroom. REC/Craft: Field B (M/W/F), A272/A291 split (Tu/Th). Music in Classroom (Radiate Auditorium).",
+        schedule:[
+          {time:"9:00–9:25",  activity:"Class Time",    location:"Classroom"},
+          {time:"9:25–9:30",  activity:"Travel",         location:""},
+          {time:"9:30–9:55",  activity:"Worship Rally",  location:"Lower Auditorium"},
+          {time:"9:55–10:05", activity:"Bathroom Break", location:""},
+          {time:"10:05–10:25",activity:"*Music",         location:"Classroom (Radiate Aud)"},
+          {time:"10:25–10:30",activity:"Travel",         location:""},
+          {time:"10:30–11:25",activity:"Class Time (**Snack)", location:"Classroom"},
+          {time:"11:25–11:30",activity:"Travel",         location:""},
+          {time:"11:30–11:50",activity:"*REC / *Craft",  location:"Field B (M/W/F) / A272+A291 split (Tu/Th)"},
+          {time:"11:50–11:55",activity:"Travel",         location:""},
+          {time:"11:55–12:00",activity:"Wrap-Up",        location:"Classroom"},
+          {time:"12:00",       activity:"Dismissal",     location:""},
+        ]
+      }
+    ]
+  }
+];
+
+// Build flat class list
+const allClasses = GRADES.flatMap(g => g.classes);
+
+// ============================================================
+// UI STATE
+// ============================================================
+let currentView = 'browse'; // browse | rooms | search | detail
+let previousView = 'browse';
+let searchTimeout = null;
+
+// ============================================================
+// RENDER GRADE LIST
+// ============================================================
+function renderGradeList() {
+  const container = document.getElementById('gradeList');
+  container.innerHTML = '';
+  GRADES.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'grade-card';
+    const header = document.createElement('div');
+    header.className = 'grade-header';
+    header.style.background = g.color;
+    header.innerHTML = `<span>${g.grade} <small style="opacity:.7;font-size:.75rem;">(${g.classes.length} class${g.classes.length>1?'es':''})</small></span><span class="chevron">▼</span>`;
+    header.onclick = () => {
+      header.classList.toggle('open');
+      list.classList.toggle('open');
+    };
+    const list = document.createElement('div');
+    list.className = 'class-list';
+    g.classes.forEach(cls => {
+      const item = document.createElement('div');
+      item.className = 'class-item';
+      item.innerHTML = `<div><div class="class-name">${cls.group}</div><div class="class-room">Room: ${cls.room}</div></div><span class="arrow">›</span>`;
+      item.onclick = () => showSchedule(cls.id);
+      list.appendChild(item);
+    });
+    card.appendChild(header);
+    card.appendChild(list);
+    container.appendChild(card);
+  });
+}
+
+// ============================================================
+// RENDER SCHEDULE DETAIL
+// ============================================================
+function showSchedule(classId, fromSearch) {
+  const cls = allClasses.find(c => c.id === classId);
+  if (!cls) return;
+
+  previousView = fromSearch ? 'search' : currentView;
+  currentView = 'detail';
+
+  document.getElementById('backBtn').textContent = previousView === 'search' ? '← Back to Results' : '← Back';
+
+  const rows = cls.schedule.map(s => {
+    const isTravel = s.activity.toLowerCase().includes('travel');
+    const rowClass = isTravel ? 'travel-row' : (
+      ['worship rally','music','craft','rec','snack'].some(k => s.activity.toLowerCase().includes(k)) ? 'highlight-activity' : ''
+    );
+    return `<tr class="${rowClass}"><td>${s.time}</td><td>${s.activity}</td><td>${s.location}</td></tr>`;
+  }).join('');
+
+  document.getElementById('scheduleContent').innerHTML = `
+    <div class="schedule-header">
+      <h2>${cls.group}</h2>
+      <p>Room: ${cls.room} &nbsp;·&nbsp; ${cls.grade}</p>
+    </div>
+    <table>
+      <thead><tr><th>Time</th><th>Activity</th><th>Location</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${cls.notes ? `<div class="note-box">ℹ️ ${cls.notes}</div>` : ''}
+  `;
+
+  hideAllViews();
+  document.getElementById('scheduleDetailView').style.display = 'block';
+}
+
+function goBack() {
+  if (previousView === 'search') {
+    currentView = 'search';
+    hideAllViews();
+    document.getElementById('searchResultsView').style.display = 'block';
+  } else if (previousView === 'rooms') {
+    showTab('rooms');
+  } else {
+    showTab('browse');
+  }
+}
+
+// ============================================================
+// SEARCH
+// ============================================================
+document.getElementById('searchInput').addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  const q = this.value.trim();
+  if (!q) { clearSearch(); return; }
+  searchTimeout = setTimeout(() => doSearch(q), 120);
+});
+
+function doSearch(q) {
+  const lower = q.toLowerCase();
+  const results = allClasses.filter(cls => {
+    return cls.group.toLowerCase().includes(lower)
+      || cls.room.toLowerCase().includes(lower)
+      || cls.grade.toLowerCase().includes(lower)
+      || cls.id.toLowerCase().includes(lower)
+      || cls.schedule.some(s => s.location.toLowerCase().includes(lower) || s.activity.toLowerCase().includes(lower));
+  });
+
+  const list = document.getElementById('searchResultsList');
+  if (results.length === 0) {
+    list.innerHTML = '<div class="empty-state">No classes found for "' + q + '"</div>';
+  } else {
+    list.innerHTML = results.map(cls => `
+      <div class="result-item" onclick="showSchedule('${cls.id}', true)">
+        <div>
+          <div class="result-label">${cls.group}</div>
+          <div class="result-sub">Room: ${cls.room} · ${cls.grade}</div>
+        </div>
+        <span style="color:var(--purple)">›</span>
+      </div>
+    `).join('');
+  }
+
+  currentView = 'search';
+  hideAllViews();
+  document.getElementById('searchResultsView').style.display = 'block';
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  showTab(previousView === 'rooms' ? 'rooms' : 'browse');
+}
+
+// ============================================================
+// ROOM VIEW
+// ============================================================
+const ROOMS_WITH_SCHEDULES = [
+  "C128","C126","C129","C127","C106","C107","C109","C108",
+  "C117","C207",
+  "C134","C135","C136","C137","C139","C140","C141","C142","C143",
+  "C144","C145","C146","C147","C148","C150",
+  "C110","C111","C113","C114","C115","C116","C118","C120","C121",
+  "C122","C123","C124","C125","211","212",
+  "C201","C202","C205","C206","C208","C220","C221","C223","C224",
+  "C225","C226","C232","C234",
+  "C235","C236","C237","C238","C239","C240","C230","A297","A295",
+  "A274","A275","A276","A282","A283","A285","A286","A287","A293",
+  "A171","A172","A173","A175","A178","A181","A280"
+];
+
+function renderRoomSelector() {
+  const container = document.getElementById('roomSelector');
+  container.innerHTML = ROOMS_WITH_SCHEDULES.map(r =>
+    `<button class="room-btn" onclick="showRoomSchedule('${r}')" id="rbtn-${r.replace('/','_')}">${r}</button>`
+  ).join('');
+}
+
+function showRoomSchedule(room) {
+  // Highlight active
+  document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('rbtn-' + room.replace('/','_'));
+  if (btn) btn.classList.add('active');
+
+  // Find all classes that use this room
+  const matches = allClasses.filter(cls =>
+    cls.room.includes(room) ||
+    cls.schedule.some(s => s.location === room)
+  );
+
+  const el = document.getElementById('roomScheduleContent');
+  if (matches.length === 0) {
+    el.innerHTML = '<div class="empty-state">No schedule found for room ' + room + '</div>';
+    return;
+  }
+
+  el.innerHTML = matches.map(cls => {
+    const relevantRows = cls.schedule
+      .filter(s => s.location === room || cls.room.includes(room))
+      .map(s => `<tr><td>${s.time}</td><td>${s.activity}</td></tr>`)
+      .join('');
+    return `
+      <div class="schedule-view" style="margin-bottom:10px">
+        <div class="schedule-header" style="background:var(--purple)">
+          <h2>${cls.group}</h2>
+          <p>${cls.grade} · Home room: ${cls.room}</p>
+        </div>
+        <table>
+          <thead><tr><th>Time</th><th>Activity in / for this room</th></tr></thead>
+          <tbody>${cls.schedule.map(s => {
+            const isHere = s.location === room || cls.room.includes(room);
+            return `<tr ${isHere && s.location===room ? 'style="background:#E8F5E9"' : ''}><td style="font-weight:600;white-space:nowrap">${s.time}</td><td>${s.activity}${s.location && s.location!==room ? ' <span style="color:#aaa;font-size:.8rem">@ '+s.location+'</span>' : ''}</td></tr>`;
+          }).join('')}</tbody>
+        </table>
+        <div style="padding:8px 12px;cursor:pointer;color:var(--purple);font-size:.85rem;font-weight:600" onclick="showSchedule('${cls.id}', false)">View full schedule →</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function showTab(tabName) {
+  currentView = tabName;
+  hideAllViews();
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (tabName === 'browse') {
+    document.getElementById('tabBrowse').style.display = 'block';
+    document.querySelectorAll('.tab-btn')[0].classList.add('active');
+  } else if (tabName === 'rooms') {
+    document.getElementById('tabRooms').style.display = 'block';
+    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+  }
+}
+
+function hideAllViews() {
+  document.getElementById('tabBrowse').style.display = 'none';
+  document.getElementById('tabRooms').style.display = 'none';
+  document.getElementById('searchResultsView').style.display = 'none';
+  document.getElementById('scheduleDetailView').style.display = 'none';
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderGradeList();
+renderRoomSelector();
+</script>
+</body>
+</html>
